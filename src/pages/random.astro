@@ -1,0 +1,28 @@
+---
+import { Image } from 'astro:assets';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import cabbage from '../assets/cabbage_technical.png';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<p>
+				Human random number generator
+			</p>
+			<p>
+				Color of neuromodulators
+				(implement login by ip?)
+			</p>
+		</main>
+		<Footer />
+	</body>
+</html>
