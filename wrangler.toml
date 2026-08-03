@@ -1,0 +1,7 @@
+name = "pink-parsec"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"                       # must be exactly "DB" — the code expects it
+database_name = "nm-colors"
+database_id = "5024e0c8-99fd-46b2-b7c4-b049c08b31c7"

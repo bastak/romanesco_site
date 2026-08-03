@@ -1,0 +1,546 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+
+const TITLE = 'What colour is a neuromodulator?';
+const DESCRIPTION =
+  'Pick a colour for serotonin, noradrenaline, dopamine and acetylcholine, then see what everyone else picked.';
+
+// ---------------------------------------------------------------------------
+// IMPORTANT: these keys are duplicated in functions/api/_shared.ts, which
+// rejects any key it does not recognise. If you change one, change the other.
+// The hex values live here only — the database stores keys, never hex, so you
+// can restyle the palette later without invalidating past responses.
+// ---------------------------------------------------------------------------
+const PALETTE = [
+	{ key: 'red', label: 'red', hex: '#e03131' },
+	{ key: 'orange', label: 'orange', hex: '#f76707' },
+	{ key: 'yellow', label: 'yellow', hex: '#f5d90a' },
+	{ key: 'lime', label: 'lime', hex: '#a2c520' },
+	{ key: 'green', label: 'green', hex: '#2f9e44' },
+	{ key: 'teal', label: 'teal', hex: '#0ca678' },
+	{ key: 'cyan', label: 'cyan', hex: '#22b8cf' },
+	{ key: 'blue', label: 'blue', hex: '#1c7ed6' },
+	{ key: 'indigo', label: 'indigo', hex: '#4263eb' },
+	{ key: 'violet', label: 'violet', hex: '#7950f2' },
+	{ key: 'magenta', label: 'magenta', hex: '#cc2f9e' },
+	{ key: 'pink', label: 'pink', hex: '#f06595' },
+	{ key: 'brown', label: 'brown', hex: '#8a5a2b' },
+	{ key: 'grey', label: 'grey', hex: '#868e96' },
+	{ key: 'black', label: 'black', hex: '#1a1a1a' },
+	{ key: 'white', label: 'white', hex: '#ffffff' },
+];
+
+const NEUROMODULATORS = [
+	{ key: 'serotonin', name: 'serotonin' },
+	{ key: 'noradrenaline', name: 'noradrenaline' },
+	{ key: 'dopamine', name: 'dopamine' },
+	{ key: 'acetylcholine', name: 'acetylcholine' },
+];
+
+const SITEKEY = import.meta.env.PUBLIC_TURNSTILE_SITEKEY ?? '';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={TITLE} description={DESCRIPTION} />
+		<script
+			src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+			async
+			defer
+			is:inline></script>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>{TITLE}</h1>
+
+			<p class="lede">
+				There is no right answer. Colours in figures are assigned by whoever made the
+				figure, so what you are reporting is your own association, not a fact about the
+				molecule. Answer with whatever comes first.
+			</p>
+
+			<noscript>
+				<p><strong>This page needs JavaScript to record and show responses.</strong></p>
+			</noscript>
+
+			<!-- ============================== QUIZ ============================== -->
+			<section id="quiz" aria-label="Poll">
+				<div id="questions">
+					{
+						NEUROMODULATORS.map((nm) => (
+							<fieldset class="question" data-nm={nm.key}>
+								<legend>If {nm.name} were a colour, which would it be?</legend>
+								<div class="swatches">
+									{PALETTE.map((c) => (
+										<label class="swatch" style={`--swatch: ${c.hex}`}>
+											<input
+												type="radio"
+												class="sr-only"
+												name={nm.key}
+												value={c.key}
+											/>
+											<span class="chip" aria-hidden="true" />
+											<span class="sr-only">{c.label}</span>
+											<span class="tip">{c.label}</span>
+										</label>
+									))}
+								</div>
+							</fieldset>
+						))
+					}
+				</div>
+
+				<fieldset class="question background">
+					<legend>Do you work in neuroscience?</legend>
+					<div class="binary">
+						<label><input type="radio" name="neuro_work" value="yes" /><span>Yes</span></label>
+						<label><input type="radio" name="neuro_work" value="no" /><span>No</span></label>
+					</div>
+				</fieldset>
+
+				<div class="turnstile-wrap">
+					<div class="cf-turnstile" data-sitekey={SITEKEY} data-size="flexible"></div>
+				</div>
+
+				<button id="submit" type="button">Submit and see the results</button>
+				<p id="status" role="status" aria-live="polite"></p>
+			</section>
+
+			<!-- ============================= RESULTS ============================= -->
+			<section id="results" hidden aria-label="Results">
+				<h2>What everyone picked</h2>
+
+				<div class="cohort" role="group" aria-label="Filter responses">
+					<button type="button" data-cohort="all" class="active">Everyone</button>
+					<button type="button" data-cohort="neuro">Works in neuroscience</button>
+					<button type="button" data-cohort="other">Does not</button>
+				</div>
+
+				<p id="n-label" class="n-label"></p>
+				<div id="charts"></div>
+
+				<p class="footnote">
+					Your own answers are marked with a dot. Bars are ordered by share; the
+					neuromodulators appeared in a random order for every respondent, so any
+					difference between them is not a position effect.
+				</p>
+			</section>
+		</main>
+		<Footer />
+
+		<script type="application/json" id="palette-data" set:html={JSON.stringify(PALETTE)} is:inline
+		></script>
+
+		<script>
+			type Cell = { nm: string; color: string; neuro_work: number; n: number };
+			type Results = { cells: Cell[]; total: number; neuro: number };
+
+			const PALETTE: { key: string; label: string; hex: string }[] = JSON.parse(
+				document.getElementById('palette-data')!.textContent!,
+			);
+			const HEX = new Map(PALETTE.map((c) => [c.key, c.hex]));
+			const LABEL = new Map(PALETTE.map((c) => [c.key, c.label]));
+			const ORDER_ON_PAGE = PALETTE.map((c) => c.key);
+
+			const quiz = document.getElementById('quiz')!;
+			const resultsEl = document.getElementById('results')!;
+			const chartsEl = document.getElementById('charts')!;
+			const statusEl = document.getElementById('status')!;
+			const nLabel = document.getElementById('n-label')!;
+			const submitBtn = document.getElementById('submit') as HTMLButtonElement;
+
+			const loadedAt = Date.now();
+			let myAnswers: Record<string, string> | null = null;
+			let lastResults: Results | null = null;
+			let cohort: 'all' | 'neuro' | 'other' = 'all';
+
+			// --- Randomise the order the neuromodulators are presented in ---------
+			// Done in the browser because the page is statically built. The order is
+			// sent with the submission so an order effect can be tested for later.
+			const questionsEl = document.getElementById('questions')!;
+			const blocks = Array.from(questionsEl.querySelectorAll<HTMLElement>('.question'));
+			for (let i = blocks.length - 1; i > 0; i--) {
+				const j = Math.floor(Math.random() * (i + 1));
+				[blocks[i], blocks[j]] = [blocks[j], blocks[i]];
+			}
+			blocks.forEach((b) => questionsEl.appendChild(b));
+			const presentationOrder = blocks.map((b) => b.dataset.nm!);
+
+			// --- Submit ----------------------------------------------------------
+			submitBtn.addEventListener('click', async () => {
+				const answers: Record<string, string> = {};
+				for (const nm of presentationOrder) {
+					const picked = quiz.querySelector<HTMLInputElement>(
+						`input[name="${nm}"]:checked`,
+					);
+					if (!picked) {
+						statusEl.textContent = `Pick a colour for ${nm} first.`;
+						quiz.querySelector<HTMLElement>(`.question[data-nm="${nm}"]`)
+							?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+						return;
+					}
+					answers[nm] = picked.value;
+				}
+
+				const bg = quiz.querySelector<HTMLInputElement>('input[name="neuro_work"]:checked');
+				if (!bg) {
+					statusEl.textContent = 'Answer the last question first.';
+					return;
+				}
+
+				const tokenInput = document.querySelector<HTMLInputElement>(
+					'input[name="cf-turnstile-response"]',
+				);
+				if (!tokenInput?.value) {
+					statusEl.textContent = 'Still verifying you are human — try again in a moment.';
+					return;
+				}
+
+				submitBtn.disabled = true;
+				statusEl.textContent = 'Submitting…';
+
+				try {
+					const res = await fetch('/api/vote', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							answers,
+							neuroWork: bg.value === 'yes',
+							order: presentationOrder,
+							elapsedMs: Date.now() - loadedAt,
+							turnstileToken: tokenInput.value,
+						}),
+					});
+
+					if (res.status === 409) {
+						statusEl.textContent = 'You have already voted from this browser.';
+						await showExistingResults();
+						return;
+					}
+					if (res.status === 429) {
+						statusEl.textContent =
+							'Too many submissions from your network today. Try again tomorrow.';
+						submitBtn.disabled = false;
+						return;
+					}
+					if (!res.ok) {
+						statusEl.textContent = 'Something went wrong. Try again.';
+						submitBtn.disabled = false;
+						return;
+					}
+
+					myAnswers = answers;
+					reveal((await res.json()) as Results);
+				} catch {
+					statusEl.textContent = 'Network error. Try again.';
+					submitBtn.disabled = false;
+				}
+			});
+
+			// --- Returning visitor ------------------------------------------------
+			async function showExistingResults() {
+				const res = await fetch('/api/results');
+				if (res.ok) reveal((await res.json()) as Results);
+			}
+			showExistingResults();
+
+			function reveal(data: Results) {
+				lastResults = data;
+				quiz.hidden = true;
+				resultsEl.hidden = false;
+				draw();
+				resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
+
+			// --- Cohort toggle ----------------------------------------------------
+			resultsEl.querySelectorAll<HTMLButtonElement>('.cohort button').forEach((btn) => {
+				btn.addEventListener('click', () => {
+					resultsEl
+						.querySelectorAll('.cohort button')
+						.forEach((b) => b.classList.remove('active'));
+					btn.classList.add('active');
+					cohort = btn.dataset.cohort as typeof cohort;
+					draw();
+				});
+			});
+
+			// --- Chart ------------------------------------------------------------
+			function draw() {
+				if (!lastResults) return;
+				const { cells, total, neuro } = lastResults;
+
+				const keep = (c: Cell) =>
+					cohort === 'all' ||
+					(cohort === 'neuro' && c.neuro_work === 1) ||
+					(cohort === 'other' && c.neuro_work === 0);
+
+				const n = cohort === 'all' ? total : cohort === 'neuro' ? neuro : total - neuro;
+				nLabel.textContent = n === 1 ? '1 response' : `${n} responses`;
+
+				if (n === 0) {
+					chartsEl.innerHTML = '<p>No responses in this group yet.</p>';
+					return;
+				}
+
+				const byNm = new Map<string, Map<string, number>>();
+				for (const c of cells) {
+					if (!keep(c)) continue;
+					if (!byNm.has(c.nm)) byNm.set(c.nm, new Map());
+					const m = byNm.get(c.nm)!;
+					m.set(c.color, (m.get(c.color) ?? 0) + c.n);
+				}
+
+				const order = ['serotonin', 'noradrenaline', 'dopamine', 'acetylcholine'];
+				chartsEl.innerHTML = order
+					.filter((nm) => byNm.has(nm))
+					.map((nm) => bar(nm, byNm.get(nm)!, n))
+					.join('');
+			}
+
+			function bar(nm: string, counts: Map<string, number>, n: number) {
+				const entries = [...counts.entries()].sort(
+					(a, b) => b[1] - a[1] || ORDER_ON_PAGE.indexOf(a[0]) - ORDER_ON_PAGE.indexOf(b[0]),
+				);
+
+				const W = 100;
+				const H = 8;
+				let x = 0;
+				const segs = entries
+					.map(([key, count]) => {
+						const w = (count / n) * W;
+						const pct = Math.round((count / n) * 100);
+						const seg = `<rect x="${x}" y="0" width="${w}" height="${H}" fill="${HEX.get(key)}" stroke="rgba(0,0,0,.12)" stroke-width="0.15" />`;
+						let text = '';
+						if (w >= 9) {
+							text = `<text x="${x + w / 2}" y="${H / 2}" font-size="2.6" text-anchor="middle" dominant-baseline="central" fill="${ink(key)}">${pct}%</text>`;
+						}
+						let mine = '';
+						if (myAnswers && myAnswers[nm] === key) {
+							mine = `<circle cx="${x + w / 2}" cy="${H - 1.2}" r="0.55" fill="${ink(key)}" />`;
+						}
+						x += w;
+						return seg + text + mine;
+					})
+					.join('');
+
+				const caption = entries
+					.filter(([, c]) => c / n >= 0.05)
+					.map(([key, c]) => `${LABEL.get(key)} ${Math.round((c / n) * 100)}%`)
+					.join(' · ');
+
+				const summary = entries
+					.slice(0, 3)
+					.map(([key, c]) => `${LABEL.get(key)} ${Math.round((c / n) * 100)} percent`)
+					.join(', ');
+
+				return `
+					<figure class="chart">
+						<figcaption>${nm}</figcaption>
+						<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${nm}: ${summary}" preserveAspectRatio="none">${segs}</svg>
+						<p class="chart-caption">${caption || '—'}</p>
+					</figure>`;
+			}
+
+			/** Black or white label text, whichever survives on the given swatch. */
+			function ink(key: string) {
+				const hex = HEX.get(key)!;
+				const r = parseInt(hex.slice(1, 3), 16) / 255;
+				const g = parseInt(hex.slice(3, 5), 16) / 255;
+				const b = parseInt(hex.slice(5, 7), 16) / 255;
+				const lin = (v: number) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+				const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+				return L > 0.45 ? '#111' : '#fff';
+			}
+		</script>
+
+		<style>
+			.lede {
+				color: rgb(var(--gray));
+			}
+
+			/* ---------------------------- questions ---------------------------- */
+			.question {
+				border: none;
+				border-top: 1px solid rgb(var(--gray-light));
+				padding: 1.5em 0 0.5em;
+				margin: 0 0 1.5em;
+			}
+			.question legend {
+				padding: 0;
+				font-size: 1.1em;
+				font-weight: 700;
+				color: rgb(var(--black));
+			}
+			.swatches {
+				display: grid;
+				grid-template-columns: repeat(8, 1fr);
+				gap: 0.5em;
+				margin-top: 1em;
+			}
+			.swatch {
+				position: relative;
+				display: block;
+				cursor: pointer;
+			}
+			.chip {
+				display: block;
+				aspect-ratio: 1;
+				border-radius: 4px;
+				background: var(--swatch);
+				box-shadow: inset 0 0 0 1px rgba(var(--black), 0.15);
+				transition: transform 0.08s ease;
+			}
+			.swatch:hover .chip {
+				transform: scale(1.08);
+			}
+			.swatch input:checked + .chip {
+				box-shadow:
+					inset 0 0 0 1px rgba(var(--black), 0.15),
+					0 0 0 3px #fff,
+					0 0 0 5px rgb(var(--gray-dark));
+			}
+			.swatch input:focus-visible + .chip {
+				outline: 2px solid var(--accent);
+				outline-offset: 3px;
+			}
+			.tip {
+				position: absolute;
+				bottom: calc(100% + 6px);
+				left: 50%;
+				transform: translateX(-50%);
+				background: rgb(var(--gray-dark));
+				color: #fff;
+				font-size: 12px;
+				line-height: 1;
+				padding: 4px 6px;
+				border-radius: 3px;
+				white-space: nowrap;
+				opacity: 0;
+				pointer-events: none;
+				transition: opacity 0.1s ease;
+			}
+			.swatch:hover .tip {
+				opacity: 1;
+			}
+
+			.binary {
+				display: flex;
+				gap: 1.5em;
+				margin-top: 0.75em;
+			}
+			.binary label {
+				display: flex;
+				align-items: center;
+				gap: 0.4em;
+				cursor: pointer;
+			}
+
+			.turnstile-wrap {
+				margin: 1.5em 0;
+			}
+
+			#submit {
+				font-family: inherit;
+				font-size: 1em;
+				padding: 0.6em 1.2em;
+				border: none;
+				border-radius: 6px;
+				background: var(--accent);
+				color: #fff;
+				cursor: pointer;
+			}
+			#submit:hover:not(:disabled) {
+				background: var(--accent-dark);
+			}
+			#submit:disabled {
+				opacity: 0.5;
+				cursor: default;
+			}
+			#status:empty {
+				display: none;
+			}
+			#status {
+				color: rgb(var(--gray));
+				font-size: 0.9em;
+				margin-top: 0.75em;
+			}
+
+			/* ----------------------------- results ----------------------------- */
+			.cohort {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5em;
+				margin-bottom: 0.5em;
+			}
+			.cohort button {
+				font-family: inherit;
+				font-size: 0.85em;
+				padding: 0.35em 0.8em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 999px;
+				background: transparent;
+				color: rgb(var(--gray));
+				cursor: pointer;
+			}
+			.cohort button.active {
+				background: rgb(var(--gray-dark));
+				border-color: rgb(var(--gray-dark));
+				color: #fff;
+			}
+			.n-label {
+				color: rgb(var(--gray));
+				font-size: 0.9em;
+				margin-bottom: 1.5em;
+			}
+			.chart {
+				margin: 0 0 1.75em;
+			}
+			.chart figcaption {
+				font-weight: 700;
+				color: rgb(var(--black));
+				margin-bottom: 0.35em;
+			}
+			.chart svg {
+				display: block;
+				width: 100%;
+				height: 54px;
+				border-radius: 4px;
+				overflow: hidden;
+			}
+			.chart-caption {
+				font-size: 0.85em;
+				color: rgb(var(--gray));
+				margin: 0.4em 0 0;
+			}
+			.footnote {
+				font-size: 0.85em;
+				color: rgb(var(--gray));
+				border-top: 1px solid rgb(var(--gray-light));
+				padding-top: 1em;
+			}
+
+			@media (max-width: 720px) {
+				.swatches {
+					grid-template-columns: repeat(4, 1fr);
+					gap: 0.6em;
+				}
+				.tip {
+					display: none;
+				}
+			}
+			@media (prefers-reduced-motion: reduce) {
+				.chip,
+				.tip {
+					transition: none;
+				}
+				.swatch:hover .chip {
+					transform: none;
+				}
+			}
+		</style>
+	</body>
+</html>
