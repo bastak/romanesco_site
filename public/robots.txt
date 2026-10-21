@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://romanesco.page/sitemap-index.xml
