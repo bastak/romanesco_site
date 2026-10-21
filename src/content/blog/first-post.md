@@ -1,6 +1,7 @@
 ---
 title: 'Making a memory latch with RNNs'
-description: 'Lorem ipsum dolor sit amet'
-pubDate: 'Jul 08 2022'
+description: 'Exploring RNNs capabilities'
+pubDate: 'Nov 1 2026'
 ---
 
+todo
