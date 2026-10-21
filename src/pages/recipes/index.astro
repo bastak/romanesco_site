@@ -1,9 +1,9 @@
 ---
 import { Image } from 'astro:assets';
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 import cabbage from '../assets/cabbage_technical.png';
 ---
 
@@ -15,9 +15,8 @@ import cabbage from '../assets/cabbage_technical.png';
 	<body>
 		<Header />
 		<main>
-			<Image src={cabbage} alt="" width={720} />
-			<p>
-			</p>
+            <p><a href="/kimchi">Kimchi</a></p>
+
 		</main>
 		<Footer />
 	</body>

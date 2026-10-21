@@ -65,10 +65,14 @@ b {
 	font-weight: 700;
 }
 a {
-	color: var(--accent);
+  color: #c0392b;            /* your accent — pick one colour and reuse it everywhere */
+  text-decoration: none;
+  border-bottom: 1px solid transparent;  /* reserves space so hover doesn't shift text */
+  transition: border-color 0.15s ease;
 }
+
 a:hover {
-	color: var(--accent);
+  border-bottom-color: currentColor;  /* underline appears in the same accent colour */
 }
 p {
 	margin-bottom: 1em;
