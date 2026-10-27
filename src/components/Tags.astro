@@ -1,0 +1,31 @@
+---
+import { TAGS, type Tag } from '../tags';
+
+interface Props {
+	tags: Tag[];
+}
+
+const { tags } = Astro.props;
+
+// Written out in full so Tailwind can find the class names.
+const styles: Record<Tag, string> = {
+	rl: 'bg-tag-rl/15 text-tag-rl hover:bg-tag-rl/25',
+	vr: 'bg-tag-vr/15 text-tag-vr hover:bg-tag-vr/25',
+	rnn: 'bg-tag-rnn/20 text-tag-rnn hover:bg-tag-rnn/30',
+};
+---
+
+{
+	tags.length > 0 && (
+		<span class="flex flex-wrap gap-2 normal-case tracking-normal">
+			{tags.map((t) => (
+				<a
+					href={`/blog/tags/${t}/`}
+					class={`rounded-full px-2 py-0.5 font-mono text-xs transition-colors ${styles[t]}`}
+				>
+					{`#${TAGS[t].label}`}
+				</a>
+			))}
+		</span>
+	)
+}

@@ -1,22 +1,26 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
+import { getCollection } from 'astro:content';
+import PostList from '../components/PostList.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import SiteShell from '../layouts/SiteShell.astro';
+
+const posts = (await getCollection('blog'))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+	.slice(0, 3);
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<p>
-				Welcome to my site! Here I write words and share other random things
-			</p>
-		</main>
-		<Footer />
-	</body>
-</html>
+<SiteShell title={SITE_TITLE} description={SITE_DESCRIPTION}>
+	<section class="mb-10">
+		<h1 class="max-w-xl font-display text-2xl font-medium leading-snug md:text-3xl">
+			Welcome to my site! Here I write words and share other random things
+		</h1>
+	</section>
+
+	<section>
+		<div class="mb-2 flex items-baseline justify-between">
+			<h2 class="font-mono text-xs uppercase tracking-widest text-muted-foreground">Recent</h2>
+			<a href="/blog" class="font-mono text-xs uppercase tracking-widest hover:text-accent">All →</a>
+		</div>
+		<PostList posts={posts} />
+	</section>
+</SiteShell>

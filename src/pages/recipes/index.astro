@@ -1,23 +1,32 @@
 ---
-import { Image } from 'astro:assets';
-import BaseHead from '../../components/BaseHead.astro';
-import Footer from '../../components/Footer.astro';
-import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
-import cabbage from '../../assets/cabbage_technical.png';
+import SiteShell from '../../layouts/SiteShell.astro';
+
+const recipes = [
+	{
+		name: 'Kimchi',
+		href: '/kimchi',
+		time: '1 h + 3 days',
+		description: 'Napa cabbage, salt, chilli and patience. Lets the bacteria do the cooking.',
+	},
+];
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-            <p><a href="/kimchi">Kimchi</a></p>
-
-		</main>
-		<Footer />
-	</body>
-</html>
+<SiteShell title={`Cabbage recipes — ${SITE_TITLE}`} description={SITE_DESCRIPTION}>
+	<h1 class="mb-10 font-display text-5xl">Cabbage recipes</h1>
+	<ul class="divide-y">
+		{
+			recipes.map((r) => (
+				<li>
+					<a href={r.href} class="group block py-6">
+						<div class="flex items-baseline justify-between gap-4">
+							<h2 class="font-display text-2xl transition-colors group-hover:text-accent">{r.name}</h2>
+							<span class="shrink-0 font-mono text-xs text-muted-foreground">{r.time}</span>
+						</div>
+						<p class="mt-2 text-muted-foreground">{r.description}</p>
+					</a>
+				</li>
+			))
+		}
+	</ul>
+</SiteShell>

@@ -1,66 +1,15 @@
 ---
 import { getCollection } from 'astro:content';
-import BaseHead from '../../components/BaseHead.astro';
-import Footer from '../../components/Footer.astro';
-import Header from '../../components/Header.astro';
+import PostList from '../../components/PostList.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import SiteShell from '../../layouts/SiteShell.astro';
 
 const posts = (await getCollection('blog')).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<style>
-			ul {
-				list-style-type: none;
-				margin: 0;
-				padding: 0;
-			}
-			li a {
-				display: flex;
-				justify-content: space-between;
-				align-items: baseline;
-				gap: 1rem;
-				padding: 0.5rem 0;
-				color: rgb(var(--black));
-				text-decoration: none;
-			}
-			li a:hover .title {
-				color: var(--accent);
-			}
-			.date {
-				flex-shrink: 0;
-				color: rgb(var(--gray));
-			}
-		</style>
-	</head>
-	<body>
-		<Header />
-		<main>
-			<section>
-				<ul>
-					{
-						posts.map((post) => (
-							<li>
-								<a href={`/blog/${post.id}/`}>
-									<span class="title">{post.data.title}</span>
-									<time class="date" datetime={post.data.pubDate.toISOString()}>
-										{post.data.pubDate.toLocaleDateString('en-us', {
-											month: 'short',
-											year: 'numeric',
-										})}
-									</time>
-								</a>
-							</li>
-						))
-					}
-				</ul>
-			</section>
-		</main>
-		<Footer />
-	</body>
-</html>
+<SiteShell title={`Blog — ${SITE_TITLE}`} description={SITE_DESCRIPTION}>
+	<h1 class="mb-10 font-display text-5xl">Blog</h1>
+	<PostList posts={posts} />
+</SiteShell>

@@ -1,7 +1,6 @@
 ---
-import BaseHead from '../../components/BaseHead.astro';
-import Footer from '../../components/Footer.astro';
-import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+import SiteShell from '../../layouts/SiteShell.astro';
 
 const TITLE = 'What colour is a neuromodulator?';
 const DESCRIPTION =
@@ -42,22 +41,16 @@ const NEUROMODULATORS = [
 const SITEKEY = '0x4AAAAAAEFjwIxnR8UxLVOP';
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={TITLE} description={DESCRIPTION} />
+<SiteShell title={`${TITLE} — ${SITE_TITLE}`} description={DESCRIPTION}>
 		<script
+			slot="head"
 			src="https://challenges.cloudflare.com/turnstile/v0/api.js"
 			async
 			defer
 			is:inline></script>
-	</head>
-	<body>
-		<Header />
-		<main>
-			<h1>{TITLE}</h1>
+			<h1 class="mb-4 font-display text-5xl leading-tight">{TITLE}</h1>
 
-			<p class="lede">
+			<p class="mb-10 text-lg text-muted-foreground">
 				There is no right answer. Colours in figures are assigned by whoever made the
 				figure, so what you are reporting is your own association, not a fact about the
 				molecule. Answer with whatever comes first.
@@ -112,7 +105,7 @@ const SITEKEY = '0x4AAAAAAEFjwIxnR8UxLVOP';
 
 			<!-- ============================= RESULTS ============================= -->
 			<section id="results" hidden aria-label="Results">
-				<h2>What everyone picked</h2>
+				<h2 class="mb-6 font-display text-3xl">What everyone picked</h2>
 
 				<div class="cohort" role="group" aria-label="Filter responses">
 					<button type="button" data-cohort="all" class="active">Everyone</button>
@@ -129,8 +122,6 @@ const SITEKEY = '0x4AAAAAAEFjwIxnR8UxLVOP';
 					difference between them is not a position effect.
 				</p>
 			</section>
-		</main>
-		<Footer />
 
 		<script type="application/json" id="palette-data" set:html={JSON.stringify(PALETTE)} is:inline
 		></script>
@@ -358,22 +349,27 @@ const SITEKEY = '0x4AAAAAAEFjwIxnR8UxLVOP';
 		</script>
 
 		<style>
-			.lede {
-				color: rgb(var(--gray));
-			}
-
 			/* ---------------------------- questions ---------------------------- */
 			.question {
 				border: none;
-				border-top: 1px solid rgb(var(--gray-light));
+				border-top: 1px solid var(--color-border);
 				padding: 1.5em 0 0.5em;
 				margin: 0 0 1.5em;
 			}
 			.question legend {
-				padding: 0;
-				font-size: 1.1em;
-				font-weight: 700;
-				color: rgb(var(--black));
+				/* float so the fieldset's top border runs above it, not through it */
+				float: left;
+				width: 100%;
+				padding: 0 0 1rem;
+				font-family: var(--font-display);
+				font-size: 1.5rem;
+				line-height: 1.3;
+				font-weight: 400;
+				color: var(--color-foreground);
+			}
+			.swatches,
+			.binary {
+				clear: both;
 			}
 			.swatches {
 				display: grid;
@@ -391,7 +387,7 @@ const SITEKEY = '0x4AAAAAAEFjwIxnR8UxLVOP';
 				aspect-ratio: 1;
 				border-radius: 4px;
 				background: var(--swatch);
-				box-shadow: inset 0 0 0 1px rgba(var(--black), 0.15);
+				box-shadow: inset 0 0 0 1px oklch(0 0 0 / 15%);
 				transition: transform 0.08s ease;
 			}
 			.swatch:hover .chip {
@@ -399,12 +395,12 @@ const SITEKEY = '0x4AAAAAAEFjwIxnR8UxLVOP';
 			}
 			.swatch input:checked + .chip {
 				box-shadow:
-					inset 0 0 0 1px rgba(var(--black), 0.15),
-					0 0 0 3px #fff,
-					0 0 0 5px rgb(var(--gray-dark));
+					inset 0 0 0 1px oklch(0 0 0 / 15%),
+					0 0 0 3px var(--color-background),
+					0 0 0 5px var(--color-foreground);
 			}
 			.swatch input:focus-visible + .chip {
-				outline: 2px solid var(--accent);
+				outline: 2px solid var(--color-accent);
 				outline-offset: 3px;
 			}
 			.tip {
@@ -412,8 +408,8 @@ const SITEKEY = '0x4AAAAAAEFjwIxnR8UxLVOP';
 				bottom: calc(100% + 6px);
 				left: 50%;
 				transform: translateX(-50%);
-				background: rgb(var(--gray-dark));
-				color: #fff;
+				background: var(--color-foreground);
+				color: var(--color-background);
 				font-size: 12px;
 				line-height: 1;
 				padding: 4px 6px;
@@ -445,16 +441,18 @@ const SITEKEY = '0x4AAAAAAEFjwIxnR8UxLVOP';
 
 			#submit {
 				font-family: inherit;
-				font-size: 1em;
-				padding: 0.6em 1.2em;
+				font-size: 0.875rem;
+				font-weight: 500;
+				padding: 0.5rem 1rem;
 				border: none;
-				border-radius: 6px;
-				background: var(--accent);
-				color: #fff;
+				border-radius: var(--radius-md);
+				background: var(--color-primary);
+				color: var(--color-primary-foreground);
 				cursor: pointer;
+				transition: background-color 0.15s ease;
 			}
 			#submit:hover:not(:disabled) {
-				background: var(--accent-dark);
+				background: color-mix(in oklch, var(--color-primary) 90%, transparent);
 			}
 			#submit:disabled {
 				opacity: 0.5;
@@ -464,7 +462,7 @@ const SITEKEY = '0x4AAAAAAEFjwIxnR8UxLVOP';
 				display: none;
 			}
 			#status {
-				color: rgb(var(--gray));
+				color: var(--color-muted-foreground);
 				font-size: 0.9em;
 				margin-top: 0.75em;
 			}
@@ -477,22 +475,22 @@ const SITEKEY = '0x4AAAAAAEFjwIxnR8UxLVOP';
 				margin-bottom: 0.5em;
 			}
 			.cohort button {
-				font-family: inherit;
-				font-size: 0.85em;
+				font-family: var(--font-mono);
+				font-size: 0.75rem;
 				padding: 0.35em 0.8em;
-				border: 1px solid rgb(var(--gray-light));
+				border: 1px solid var(--color-border);
 				border-radius: 999px;
 				background: transparent;
-				color: rgb(var(--gray));
+				color: var(--color-muted-foreground);
 				cursor: pointer;
 			}
 			.cohort button.active {
-				background: rgb(var(--gray-dark));
-				border-color: rgb(var(--gray-dark));
-				color: #fff;
+				background: var(--color-foreground);
+				border-color: var(--color-foreground);
+				color: var(--color-background);
 			}
 			.n-label {
-				color: rgb(var(--gray));
+				color: var(--color-muted-foreground);
 				font-size: 0.9em;
 				margin-bottom: 1.5em;
 			}
@@ -500,8 +498,9 @@ const SITEKEY = '0x4AAAAAAEFjwIxnR8UxLVOP';
 				margin: 0 0 1.75em;
 			}
 			.chart figcaption {
-				font-weight: 700;
-				color: rgb(var(--black));
+				font-family: var(--font-display);
+				font-size: 1.5rem;
+				color: var(--color-foreground);
 				margin-bottom: 0.35em;
 			}
 			.chart svg {
@@ -513,13 +512,13 @@ const SITEKEY = '0x4AAAAAAEFjwIxnR8UxLVOP';
 			}
 			.chart-caption {
 				font-size: 0.85em;
-				color: rgb(var(--gray));
+				color: var(--color-muted-foreground);
 				margin: 0.4em 0 0;
 			}
 			.footnote {
 				font-size: 0.85em;
-				color: rgb(var(--gray));
-				border-top: 1px solid rgb(var(--gray-light));
+				color: var(--color-muted-foreground);
+				border-top: 1px solid var(--color-border);
 				padding-top: 1em;
 			}
 
@@ -542,5 +541,4 @@ const SITEKEY = '0x4AAAAAAEFjwIxnR8UxLVOP';
 				}
 			}
 		</style>
-	</body>
-</html>
+</SiteShell>

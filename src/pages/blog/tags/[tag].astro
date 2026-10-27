@@ -1,0 +1,39 @@
+---
+import { type CollectionEntry, getCollection } from 'astro:content';
+import PostList from '../../../components/PostList.astro';
+import { SITE_TITLE } from '../../../consts';
+import SiteShell from '../../../layouts/SiteShell.astro';
+import { TAG_KEYS, TAGS, type Tag } from '../../../tags';
+
+export async function getStaticPaths() {
+	const posts = (await getCollection('blog')).sort(
+		(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+	);
+	return TAG_KEYS.map((tag) => ({
+		params: { tag },
+		props: { tag, posts: posts.filter((p) => p.data.tags.includes(tag)) },
+	}));
+}
+
+interface Props {
+	tag: Tag;
+	posts: CollectionEntry<'blog'>[];
+}
+
+const { tag, posts } = Astro.props;
+const { label } = TAGS[tag];
+---
+
+<SiteShell title={`#${label} — ${SITE_TITLE}`} description={`Posts tagged ${label}.`}>
+	<h1 class="mb-10 break-words font-display text-4xl leading-tight sm:text-5xl">#{label}</h1>
+	{
+		posts.length > 0 ? (
+			<PostList posts={posts} />
+		) : (
+			<p class="text-lg text-muted-foreground">No posts with this tag yet.</p>
+		)
+	}
+	<a href="/blog" class="mt-16 inline-block font-mono text-xs uppercase tracking-widest hover:text-accent">
+		← All posts
+	</a>
+</SiteShell>

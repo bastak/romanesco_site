@@ -1,0 +1,29 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import FormattedDate from './FormattedDate.astro';
+import Tags from './Tags.astro';
+
+interface Props {
+	posts: CollectionEntry<'blog'>[];
+}
+
+const { posts } = Astro.props;
+---
+
+<ul class="divide-y">
+	{
+		posts.map((p) => (
+			<li class="py-6">
+				{/* Tags are links themselves, so they sit outside the post link. */}
+				<div class="mb-2 flex flex-wrap items-baseline gap-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">
+					<FormattedDate date={p.data.pubDate} />
+					<Tags tags={p.data.tags} />
+				</div>
+				<a href={`/blog/${p.id}/`} class="group block">
+					<h3 class="font-display text-2xl transition-colors group-hover:text-accent">{p.data.title}</h3>
+					<p class="mt-2 text-muted-foreground">{p.data.description}</p>
+				</a>
+			</li>
+		))
+	}
+</ul>
